@@ -1,80 +1,47 @@
 name: Build options.json
 
+run-name: Build options.json for ${{ inputs.path }}
+
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/*.yml"
-  schedule:
-    - cron: "38 3 * * *"
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  workflow_call:
+    inputs:
+      repository:
+        type: string
+      ref:
+        type: string
+      path:
+        type: string
+      doc-dir:
+        type: string
+      file:
+        type: string
+      attribute:
+        type: string
+      runs-on:
+        type: string
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: macos-14
+  build:
+    runs-on: ${{ inputs.runs-on }}
     steps:
-      - name: Checkout nix-darwin
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          repository: LnL7/nix-darwin
-          ref: refs/heads/master
-          path: nix-darwin
-      - name: Checkout home-manager
-        uses: actions/checkout@v4
-        with:
-          repository: nix-community/home-manager
-          ref: refs/heads/master
-          path: home-manager
-      - name: Checkout nur-combined
-        uses: actions/checkout@v4
-        with:
-          repository: nix-community/nur-combined
-          ref: refs/heads/main
-          path: nur-combined
-      - name: Checkout nur-search
-        uses: actions/checkout@v4
-        with:
-          repository: nix-community/nur-search
-          ref: refs/heads/main
-          path: nur-search
+          repository: ${{ inputs.repository }}
+          ref: ${{ inputs.ref }}
+          path: ${{ inputs.path }}
+
       - name: Install Nix
         uses: cachix/install-nix-action@v31
-      - name: Build darwin options.json
+
+      - name: Build options.json for ${{ inputs.path }}
         run: |
-          mkdir -p site/darwin
-          git -C nix-darwin rev-parse HEAD > site/darwin/revision
-          nix-build ./nix-darwin/release.nix -I nixpkgs=channel:nixpkgs-unstable -I darwin=nix-darwin -A docs.optionsJSON
-          cp result/share/doc/darwin/options.json{,.br} site/darwin/
-      - name: Build home-manager options.json
-        run: |
-          mkdir -p site/home-manager
-          git -C home-manager rev-parse HEAD > site/home-manager/revision
-          nix-build ./home-manager/default.nix -I nixpkgs=channel:nixpkgs-unstable -I home-manager=home-manager -A docs.json
-          cp result/share/doc/home-manager/options.json{,.br} site/home-manager/
-      - name: Build nur packages.json
-        run: |
-          mkdir -p site/nur
-          git -C nur-combined rev-parse HEAD > site/nur/revision
-          cp nur-search/data/packages.json site/nur/
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+          mkdir -p site/${{ inputs.doc-dir }}
+          cd ${{ inputs.path }}
+          git rev-parse HEAD > ../site/${{ inputs.doc-dir }}/revision
+          nix-build ${{ inputs.file }} -I nixpkgs=channel:nixpkgs-unstable -A ${{ inputs.attribute }}
+          cp result/share/doc/${{ inputs.doc-dir }}/options.json{,.br} ../site/${{ inputs.doc-dir }}/
+
+      - uses: actions/upload-artifact@v4
         with:
+          name: ${{ inputs.doc-dir }}
           path: site
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4

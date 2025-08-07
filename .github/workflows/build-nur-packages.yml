@@ -1,0 +1,36 @@
+name: Build packages.json for NUR
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout nur-combined
+        uses: actions/checkout@v4
+        with:
+          repository: nix-community/nur-combined
+          ref: refs/heads/main
+          path: nur-combined
+
+      - name: Checkout nur-search
+        uses: actions/checkout@v4
+        with:
+          repository: nix-community/nur-search
+          ref: refs/heads/main
+          path: nur-search
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Build nur packages.json
+        run: |
+          mkdir -p site/nur
+          git -C nur-combined rev-parse HEAD > site/nur/revision
+          cp nur-search/data/packages.json site/nur/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nur
+          path: site
