@@ -32,13 +32,15 @@ jobs:
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixpkgs-unstable
 
       - name: Build options.json for ${{ inputs.path }}
         run: |
           mkdir -p site/${{ inputs.doc-dir }}
           cd ${{ inputs.path }}
           git rev-parse HEAD > ../site/${{ inputs.doc-dir }}/revision
-          nix-build ${{ inputs.file }} -I nixpkgs=channel:nixpkgs-unstable -A ${{ inputs.attribute }}
+          nix-build ${{ inputs.file }} -A ${{ inputs.attribute }}
           cp result/share/doc/${{ inputs.doc-dir }}/options.json{,.br} ../site/${{ inputs.doc-dir }}/
 
       - uses: actions/upload-artifact@v4
