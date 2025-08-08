@@ -15,41 +15,34 @@ permissions:
   id-token: write
 
 jobs:
-  build-options:
-    strategy:
-      matrix:
-        source:
-          - repository: LnL7/nix-darwin
-            ref: refs/heads/master
-            path: nix-darwin
-            doc-dir: darwin
-            file: release.nix
-            attribute: docs.optionsJSON
-            runs-on: macos-15
-          - repository: nix-community/home-manager
-            ref: refs/heads/master
-            path: home-manager
-            doc-dir: home-manager
-            file: default.nix
-            attribute: docs.json
-            runs-on: ubuntu-latest
+  build-darwin-options:
     uses: ./.github/workflows/build-options.yml
     with:
-      repository: ${{ matrix.source.repository }}
-      ref: ${{ matrix.source.ref }}
-      path: ${{ matrix.source.path }}
-      doc-dir: ${{ matrix.source.doc-dir }}
-      file: ${{ matrix.source.file }}
-      attribute: ${{ matrix.source.attribute }}
-      runs-on: ${{ matrix.source.runs-on }}
-
+      repository: LnL7/nix-darwin
+      ref: refs/heads/master
+      path: nix-darwin
+      doc-dir: darwin
+      file: release.nix
+      attribute: docs.optionsJSON
+      runs-on: macos-15
+  build-home-manager-options:
+    uses: ./.github/workflows/build-options.yml
+    with:
+      repository: nix-community/home-manager
+      ref: refs/heads/master
+      path: home-manager
+      doc-dir: home-manager
+      file: default.nix
+      attribute: docs.json
+      runs-on: ubuntu-latest
   build-nur-packages:
     uses: ./.github/workflows/build-nur-packages.yml
 
   assemble:
     runs-on: ubuntu-latest
     needs:
-      - build-options
+      - build-darwin-options
+      - build-home-manager-options
       - build-nur-packages
     steps:
       - name: Merge build artifacts
