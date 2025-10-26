@@ -30,7 +30,7 @@ jobs:
           git -C nur-combined rev-parse HEAD > site/nur/revision
           cp nur-search/data/packages.json site/nur/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: nur
           path: site
